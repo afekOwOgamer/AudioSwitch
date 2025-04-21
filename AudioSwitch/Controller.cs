@@ -1,4 +1,4 @@
-﻿using CoreAudio;
+using CoreAudio;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -24,7 +24,7 @@ namespace AudioSwitch
             Dictionary<string, MMDevice> lookup = new(count);
 
             for (int i = 0; i < count; i++)
-                lookup[devices[i].DeviceFriendlyName] = devices[i];
+                lookup[devices[i].DeviceInterfaceFriendlyName] = devices[i];
 
             int itemInserted = 0;
             HashSet<string> added = [];
