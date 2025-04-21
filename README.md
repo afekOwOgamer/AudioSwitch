@@ -11,6 +11,18 @@ This tool uses **environment variables** to determine which action to perform wh
 - `-1`: Switch to the **next** audio device  
 - `0` or higher: Select a specific audio device by its **index**
 
+### 🆕 Feature: Custom Device Order
+- **'Name of your device'**: You can now specify the order in which your audio devices appear in the index.
+- If you have devices named 1, 2, and 3, but they appear in a different order in Windows than what you prefer, you can now define their order manually via command line arguments.
+- Just list the device names in the desired order, and the program will follow that when switching devices!
+
+**Please Note:** Use only the actual device name (e.g., "Realtek Audio") and not the full description that appears in Windows (e.g., NOT "Speakers (Realtek Audio)").
+
+**Example:**
+```bash
+audioswitcher.exe "BoomBox" "EarBuddies" "ScreenSound"
+```
+
 After performing the action, the executable will return the new **current audio device** and then exit.
 
 ## Recommended Setup
