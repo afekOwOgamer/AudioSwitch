@@ -1,66 +1,87 @@
-﻿using System.Runtime.InteropServices;
-using CoreAudio;
+﻿using CoreAudio;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace AudioSwitch
 {
-    internal partial class Controller
+    public class Controller
     {
-        // All playback devices
-        private readonly MMDeviceCollection _mMDevices;
-        // Current playback device
+        private readonly MMDevice[] _devices;
+        private readonly int count;
         private int _current;
 
-        // Constructor
-        public Controller()
+        public Controller(string[] deviceOrder)
         {
             MMDeviceEnumerator deviceEnum = new(Guid.NewGuid());
-            // All playback devices
-            _mMDevices = deviceEnum.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
-            // Current playback device
-            for (int i = 0; i < _mMDevices.Count; i++)
-                if (_mMDevices[i].Selected)
-                    _current = i;
+            MMDeviceCollection devices = deviceEnum.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+
+            count = devices.Count;
+
+            _devices = new MMDevice[count];
+
+            Dictionary<string, MMDevice> lookup = new(count);
+
+            for (int i = 0; i < count; i++)
+                lookup[devices[i].DeviceFriendlyName] = devices[i];
+
+            int itemInserted = 0;
+            HashSet<string> added = [];
+            foreach (string name in deviceOrder)
+                if (lookup.TryGetValue(name, out var dev) && added.Add(dev.ID))
+                    _devices[itemInserted++] = dev;
+
+            foreach (var dev in devices)
+                if (added.Add(dev.ID))
+                    _devices[itemInserted++] = dev;
+
+            _current = GetCurrent();
         }
-        
-        // Switches to the next device and returns its index
+
         public int Next()
         {
-            if (_mMDevices.Count == 0) return -1;
+            if (count == 0 || _current == -1)
+                return -1;
 
-            int newIndex = Interlocked.Increment(ref _current) % _mMDevices.Count;
-            SetDefault(newIndex);
-            return newIndex;
+            _current = (_current + 1) % count;
+            return SetDefault();
         }
 
-        // Switches to the previous device and returns its index
         public int Previous()
         {
-            if (_mMDevices.Count == 0) return -1;
+            if (count == 0 || _current == -1)
+                return -1;
 
-            int newIndex = Interlocked.Decrement(ref _current);
-            if (newIndex < 0) newIndex = _mMDevices.Count - 1;
-
-            SetDefault(newIndex);
-            return newIndex;
+            _current = (_current - 1 + count) % count;
+            return SetDefault();
         }
 
-        // Switches to the selected device and returns its index
         public int Select(int selectedDevice)
         {
-            if (selectedDevice < 0 || selectedDevice >= _mMDevices.Count) return -1;
+            if ((uint)selectedDevice >= (uint)count) // faster bounds check
+                return -1;
 
-            Interlocked.Exchange(ref _current, selectedDevice);
-            SetDefault(selectedDevice);
-            return selectedDevice;
+            _current = selectedDevice;
+            return SetDefault();
         }
 
-        // Sets the selected device
-        private void SetDefault(int index)
+        private int SetDefault()
         {
-            if (index < 0 || index >= _mMDevices.Count) return;
+            var device = _devices[_current];
+            if (!device.Selected)
+                device.Selected = true;
 
-            MMDevice device = _mMDevices[index];
-            device.Selected = true;
+            return _current;
+        }
+
+        private int GetCurrent()
+        {
+            for (int i = 0; i < count; i++)
+                if (_devices[i].Selected)
+                    return i;
+
+            return -1;
         }
     }
 }
