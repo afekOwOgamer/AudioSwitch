@@ -20,7 +20,7 @@ This tool uses **environment variables** to determine which action to perform wh
 
 **Example:**
 ```bash
-audioswitcher.exe "BoomBox" "EarBuddies" "ScreenSound"
+audioswitcher.exe 0 "BoomBox" "EarBuddies" "ScreenSound"
 ```
 
 After performing the action, the executable will return the new **current audio device** and then exit.
@@ -38,3 +38,9 @@ The hotkeys work as follows:
 - **Ctrl + Shift + Alt + F1**: Switch to the previous audio device
 - **Ctrl + Shift + Alt + F2**: Switch to the next audio device
 - **Ctrl + Shift + Alt + F3 - F12**: Select the audio device by its index (0-9)
+
+Optionally: list your device names if you want to order them in a specific way
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
