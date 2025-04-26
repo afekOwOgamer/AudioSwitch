@@ -1,87 +1,99 @@
 using CoreAudio;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 
 namespace AudioSwitch
 {
     public class Controller
     {
-        private readonly MMDevice[] _devices;
-        private readonly int count;
-        private int _current;
+        private readonly List<MMDevice> _orderedDevices = [];
+        private readonly int count = 0;
 
-        public Controller(string[] deviceOrder)
+        #region Constructors
+        public Controller()
         {
             MMDeviceEnumerator deviceEnum = new(Guid.NewGuid());
             MMDeviceCollection devices = deviceEnum.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
-
             count = devices.Count;
 
-            _devices = new MMDevice[count];
-
-            Dictionary<string, MMDevice> lookup = new(count);
-
-            for (int i = 0; i < count; i++)
-                lookup[devices[i].DeviceInterfaceFriendlyName] = devices[i];
-
-            int itemInserted = 0;
-            HashSet<string> added = [];
-            foreach (string name in deviceOrder)
-                if (lookup.TryGetValue(name, out var dev) && added.Add(dev.ID))
-                    _devices[itemInserted++] = dev;
-
-            foreach (var dev in devices)
-                if (added.Add(dev.ID))
-                    _devices[itemInserted++] = dev;
-
-            _current = GetCurrent();
+            _orderedDevices = [.. devices];
         }
 
+        public Controller(string[] requestedDeviceOrder)
+        {
+            MMDeviceEnumerator deviceEnum = new(Guid.NewGuid());
+            MMDeviceCollection devices = deviceEnum.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+            count = devices.Count;
+
+            InsertDevicesInOrder(devices, requestedDeviceOrder);
+        }
+        #endregion
+
+        #region Public
         public int Next()
         {
-            if (count == 0 || _current == -1)
+            int current = GetCurrent();
+            if (count == 0 || current == -1)
                 return -1;
 
-            _current = (_current + 1) % count;
-            return SetDefault();
+            current = (current + 1) % count;
+            return SetDefault(current);
         }
 
         public int Previous()
         {
-            if (count == 0 || _current == -1)
+            int current = GetCurrent();
+            if (count == 0 || current == -1)
                 return -1;
 
-            _current = (_current - 1 + count) % count;
-            return SetDefault();
+            current = (current - 1 + count) % count;
+            return SetDefault(current);
         }
 
         public int Select(int selectedDevice)
         {
-            if ((uint)selectedDevice >= (uint)count) // faster bounds check
+            if (selectedDevice >= count)
                 return -1;
 
-            _current = selectedDevice;
-            return SetDefault();
+            return SetDefault(selectedDevice);
         }
+        #endregion
 
-        private int SetDefault()
+        #region Private
+        private int SetDefault(int current)
         {
-            var device = _devices[_current];
+            var device = _orderedDevices[current];
             if (!device.Selected)
                 device.Selected = true;
 
-            return _current;
+            return current;
         }
 
         private int GetCurrent()
         {
             for (int i = 0; i < count; i++)
-                if (_devices[i].Selected)
+                if (_orderedDevices[i].Selected)
                     return i;
 
             return -1;
         }
+
+        private void InsertDevicesInOrder(MMDeviceCollection devices, string[] deviceOrder)
+        {
+            // Create lookup table
+            Dictionary<string, MMDevice> lookup = new(count);
+            foreach (MMDevice device in devices)
+                lookup.Add(device.DeviceInterfaceFriendlyName, device);
+
+            // add all devices in order
+            foreach (string name in deviceOrder)
+                if (lookup.Remove(name, out var dev))
+                    _orderedDevices.Add(dev);
+
+            // add all other devices
+            foreach (var dev in lookup)
+                _orderedDevices.Add(dev.Value);
+        }
+        #endregion
     }
 }
