@@ -13,15 +13,28 @@ This tool uses **environment variables** to determine which action to perform wh
 
 ### 🆕 Feature: Custom Device Order
 - **'Name of your device'**: You can now specify the order in which your audio devices appear in the index.
-- If you have devices named 1, 2, and 3, but they appear in a different order in Windows than what you prefer, you can now define their order manually via command line arguments.
-- Just list the device names in the desired order, and the program will follow that when switching devices!
+- If you have devices named 1, 2, and 3, but they appear in a different order in Windows than you prefer, you can define their order manually.
+- **You can specify the device order in two ways:**
+  - **Command Line Arguments:** List the device names directly when launching the program.
+  - **Config File:** Create a JSON config file listing your devices in the desired order, so you don't have to specify them every time you run the program.
 
-**Please Note:** Use only the actual device name (e.g., "Realtek Audio") and not the full description that appears in Windows (e.g., NOT "Speakers (Realtek Audio)").
+**Please Note:** Use only the actual device name (e.g., `"Realtek Audio"`) and not the full description that appears in Windows (e.g., NOT `"Speakers (Realtek Audio)"`).
 
-**Example:**
+**Example (Command Line):**
 ```bash
 audioswitcher.exe 0 "BoomBox" "EarBuddies" "ScreenSound"
 ```
+
+**Example (Config File - JSON):**
+```json
+[
+  "BoomBox",
+  "EarBuddies",
+  "ScreenSound"
+]
+```
+Save the device names in the file (e.g., `config.json`) placed in the same directory as the executable.  
+The program will automatically detect and load the device order from this file if no device names are provided via command line.
 
 After performing the action, the executable will return the new **current audio device** and then exit.
 
